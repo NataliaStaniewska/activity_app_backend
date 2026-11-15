@@ -95,9 +95,167 @@ API odzwierciedla model `ActivityEntry`; Flutter nie jest modyfikowany w tym
 etapie. Wartości enumów to `indoor`, `outdoor`, `mixed` dla lokalizacji oraz
 `alone`, `withOthers` dla towarzystwa.
 
+## Analiza historii i profil rekomendacyjny
+
+Analiza wykonywana jest w Pythonie na wszystkich wpisach bazy, ponieważ na tym
+etapie nie ma uwierzytelniania ani przypisania aktywności do użytkowników. Nie
+jest to bezpieczna obsługa wielu użytkowników. Obliczenia opisują obserwowane
+zależności; nie dowodzą, że aktywność spowodowała zmianę samopoczucia.
+
+- `GET /statistics` — liczby wpisów i unikalnych aktywności/kategorii, statystyki
+  aktywności, kategorii i kontekstów, rozkład `moodAfter` oraz średnia zmiana
+  nastroju `moodAfter - moodBefore`.
+- `GET /recommendation-profile` — zwięzły profil danych wejściowych dla przyszłego
+  modułu rekomendacji LLM, bez wywoływania LLM.
+
+Każda średnia ma pola `mean` i `observations`. Przy braku obserwacji `mean` ma
+wartość `null`, a zbiory są puste. Kategorie wielokrotnego wyboru są liczone
+osobno dla każdej kategorii w danym wpisie. Rozkład `moodAfter` zawiera tylko
+zaobserwowane wartości. Ranking profilu zawiera maksymalnie pięć pozycji i
+pomija grupy z mniej niż dwiema obserwacjami; pozostałe średnie i liczebności są
+zwracane bez wag ani łącznego wyniku preferencji.
+
+Przykładowa odpowiedź `GET /statistics`:
+
+```json
+{
+  "totalEntries": 3,
+  "distinctActivities": 1,
+  "distinctCategories": 2,
+  "activityOccurrences": [
+    {
+      "activityName": "Spacer",
+      "count": 3,
+      "meanMoodAfter": {"mean": 4.0, "observations": 3},
+      "meanRating": {"mean": 4.33, "observations": 3}
+    }
+  ],
+  "moodAfterDistribution": [
+    {"value": 3, "count": 1},
+    {"value": 4, "count": 2}
+  ],
+  "categories": [
+    {
+      "name": "Relaks",
+      "count": 2,
+      "meanMoodAfter": {"mean": 4.5, "observations": 2},
+      "meanRating": {"mean": 4.5, "observations": 2}
+    },
+    {
+      "name": "Ruch",
+      "count": 2,
+      "meanMoodAfter": {"mean": 3.5, "observations": 2},
+      "meanRating": {"mean": 4.0, "observations": 2}
+    }
+  ],
+  "locationTypes": [
+    {
+      "name": "outdoor",
+      "count": 3,
+      "meanMoodAfter": {"mean": 4.0, "observations": 3},
+      "meanRating": {"mean": 4.33, "observations": 3}
+    }
+  ],
+  "companyTypes": [
+    {
+      "name": "alone",
+      "count": 3,
+      "meanMoodAfter": {"mean": 4.0, "observations": 3},
+      "meanRating": {"mean": 4.33, "observations": 3}
+    }
+  ],
+  "diversity": {"uniqueActivities": 1, "uniqueCategories": 2},
+  "meanMoodChange": {"mean": 1.0, "observations": 2}
+}
+```
+
+Przykładowy kształt odpowiedzi `GET /recommendation-profile` (rankingi pokazują
+grupy z co najmniej dwiema obserwacjami):
+
+```json
+{
+  "summary": {
+    "totalEntries": 1,
+    "distinctActivities": 1,
+    "distinctCategories": 1,
+    "meanMoodChange": {"mean": 1.0, "observations": 1}
+  },
+  "dataVolume": {
+    "totalEntries": 1,
+    "distinctActivities": 1,
+    "distinctCategories": 1,
+    "minimumObservationsForRankings": 2
+  },
+  "frequentlyPerformed": [{"activityName": "Spacer", "occurrences": 1}],
+  "activityPreferences": {
+    "highestMoodAfter": [],
+    "lowestMoodAfter": [],
+    "highestRating": [],
+    "lowestRating": []
+  },
+  "categoryPreferences": {
+    "highestMoodAfter": [],
+    "lowestMoodAfter": [],
+    "highestRating": [],
+    "lowestRating": []
+  },
+  "contextPreferences": {
+    "categories": {
+      "highestMoodAfter": [],
+      "lowestMoodAfter": [],
+      "highestRating": [],
+      "lowestRating": []
+    },
+    "locationTypes": {
+      "highestMoodAfter": [],
+      "lowestMoodAfter": [],
+      "highestRating": [],
+      "lowestRating": []
+    },
+    "companyTypes": {
+      "highestMoodAfter": [],
+      "lowestMoodAfter": [],
+      "highestRating": [],
+      "lowestRating": []
+    }
+  },
+  "userStatements": [
+    {
+      "activityName": "Spacer",
+      "likes": "Lubię świeże powietrze.",
+      "dislikes": null
+    }
+  ],
+  "existingActivities": [{"activityName": "Spacer", "occurrences": 1}],
+  "limitations": [
+    "Profil obejmuje wszystkie wpisy w bazie; aktywności nie są przypisane do użytkowników.",
+    "Zwracane są zaobserwowane zależności, a nie wpływ przyczynowy.",
+    "Oceny są samoopisowe i mogą zależeć od nieujętego kontekstu.",
+    "Rankingi wymagają co najmniej 2 obserwacji; rzadsze grupy są pomijane.",
+    "Profil nie przewiduje przyszłego nastroju ani wyniku rekomendacji."
+  ]
+}
+```
+
+Pola `likes` i `dislikes` są zwracane jako dosłowne wypowiedzi przy wpisach,
+bez interpretacji. `existingActivities` pozwala przyszłemu modułowi unikać
+proponowania aktywności już obecnych w historii.
+
+### Dane demonstracyjne
+
+Importer dodaje 40 syntetycznych wpisów w jednej transakcji. Nie uruchamia się
+automatycznie, nie usuwa aktywności, a rejestr importu w osobnej tabeli zapobiega
+duplikatom przy ponownym uruchomieniu:
+
+```bash
+alembic upgrade head
+python -m scripts.import_demo_data
+```
+
 ## Testy
 
-Testy CRUD i walidacji można uruchomić bez PostgreSQL:
+Testy CRUD, analizy, walidacji i idempotencji importera działają bez PostgreSQL
+(na SQLite w pamięci):
 
 ```bash
 pytest

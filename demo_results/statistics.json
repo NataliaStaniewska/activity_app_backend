@@ -1,0 +1,291 @@
+{
+  "totalEntries": 40,
+  "distinctActivities": 10,
+  "distinctCategories": 6,
+  "activityOccurrences": [
+    {
+      "activityName": "Czytanie",
+      "count": 4,
+      "meanMoodAfter": {
+        "mean": 4.0,
+        "observations": 4
+      },
+      "meanRating": {
+        "mean": 4.0,
+        "observations": 4
+      }
+    },
+    {
+      "activityName": "Gotowanie",
+      "count": 4,
+      "meanMoodAfter": {
+        "mean": 3.25,
+        "observations": 4
+      },
+      "meanRating": {
+        "mean": 3.25,
+        "observations": 4
+      }
+    },
+    {
+      "activityName": "Gry planszowe",
+      "count": 4,
+      "meanMoodAfter": {
+        "mean": 4.0,
+        "observations": 4
+      },
+      "meanRating": {
+        "mean": 4.25,
+        "observations": 4
+      }
+    },
+    {
+      "activityName": "Jazda na rowerze",
+      "count": 4,
+      "meanMoodAfter": {
+        "mean": 4.0,
+        "observations": 4
+      },
+      "meanRating": {
+        "mean": 4.0,
+        "observations": 4
+      }
+    },
+    {
+      "activityName": "Joga",
+      "count": 4,
+      "meanMoodAfter": {
+        "mean": 4.0,
+        "observations": 4
+      },
+      "meanRating": {
+        "mean": 4.0,
+        "observations": 4
+      }
+    },
+    {
+      "activityName": "Nauka języka",
+      "count": 4,
+      "meanMoodAfter": {
+        "mean": 3.75,
+        "observations": 4
+      },
+      "meanRating": {
+        "mean": 4.0,
+        "observations": 4
+      }
+    },
+    {
+      "activityName": "Ogrodnictwo",
+      "count": 4,
+      "meanMoodAfter": {
+        "mean": 4.0,
+        "observations": 4
+      },
+      "meanRating": {
+        "mean": 4.0,
+        "observations": 4
+      }
+    },
+    {
+      "activityName": "Rysowanie",
+      "count": 4,
+      "meanMoodAfter": {
+        "mean": 4.0,
+        "observations": 4
+      },
+      "meanRating": {
+        "mean": 4.25,
+        "observations": 4
+      }
+    },
+    {
+      "activityName": "Spacer",
+      "count": 4,
+      "meanMoodAfter": {
+        "mean": 4.0,
+        "observations": 4
+      },
+      "meanRating": {
+        "mean": 4.25,
+        "observations": 4
+      }
+    },
+    {
+      "activityName": "Spotkanie ze znajomymi",
+      "count": 4,
+      "meanMoodAfter": {
+        "mean": 4.0,
+        "observations": 4
+      },
+      "meanRating": {
+        "mean": 4.25,
+        "observations": 4
+      }
+    }
+  ],
+  "moodAfterDistribution": [
+    {
+      "value": 2,
+      "count": 1
+    },
+    {
+      "value": 3,
+      "count": 11
+    },
+    {
+      "value": 4,
+      "count": 19
+    },
+    {
+      "value": 5,
+      "count": 9
+    }
+  ],
+  "categories": [
+    {
+      "name": "Inne",
+      "count": 8,
+      "meanMoodAfter": {
+        "mean": 4.0,
+        "observations": 8
+      },
+      "meanRating": {
+        "mean": 4.0,
+        "observations": 8
+      }
+    },
+    {
+      "name": "Kreatywność",
+      "count": 16,
+      "meanMoodAfter": {
+        "mean": 3.75,
+        "observations": 16
+      },
+      "meanRating": {
+        "mean": 3.94,
+        "observations": 16
+      }
+    },
+    {
+      "name": "Nauka",
+      "count": 8,
+      "meanMoodAfter": {
+        "mean": 3.88,
+        "observations": 8
+      },
+      "meanRating": {
+        "mean": 4.0,
+        "observations": 8
+      }
+    },
+    {
+      "name": "Relaks",
+      "count": 28,
+      "meanMoodAfter": {
+        "mean": 3.89,
+        "observations": 28
+      },
+      "meanRating": {
+        "mean": 4.0,
+        "observations": 28
+      }
+    },
+    {
+      "name": "Ruch",
+      "count": 12,
+      "meanMoodAfter": {
+        "mean": 4.0,
+        "observations": 12
+      },
+      "meanRating": {
+        "mean": 4.08,
+        "observations": 12
+      }
+    },
+    {
+      "name": "Spotkania",
+      "count": 8,
+      "meanMoodAfter": {
+        "mean": 4.0,
+        "observations": 8
+      },
+      "meanRating": {
+        "mean": 4.25,
+        "observations": 8
+      }
+    }
+  ],
+  "locationTypes": [
+    {
+      "name": "indoor",
+      "count": 23,
+      "meanMoodAfter": {
+        "mean": 3.78,
+        "observations": 23
+      },
+      "meanRating": {
+        "mean": 3.96,
+        "observations": 23
+      }
+    },
+    {
+      "name": "mixed",
+      "count": 6,
+      "meanMoodAfter": {
+        "mean": 3.5,
+        "observations": 6
+      },
+      "meanRating": {
+        "mean": 3.5,
+        "observations": 6
+      }
+    },
+    {
+      "name": "outdoor",
+      "count": 11,
+      "meanMoodAfter": {
+        "mean": 4.36,
+        "observations": 11
+      },
+      "meanRating": {
+        "mean": 4.45,
+        "observations": 11
+      }
+    }
+  ],
+  "companyTypes": [
+    {
+      "name": "alone",
+      "count": 24,
+      "meanMoodAfter": {
+        "mean": 4.04,
+        "observations": 24
+      },
+      "meanRating": {
+        "mean": 4.17,
+        "observations": 24
+      }
+    },
+    {
+      "name": "withOthers",
+      "count": 16,
+      "meanMoodAfter": {
+        "mean": 3.69,
+        "observations": 16
+      },
+      "meanRating": {
+        "mean": 3.81,
+        "observations": 16
+      }
+    }
+  ],
+  "diversity": {
+    "uniqueActivities": 10,
+    "uniqueCategories": 6
+  },
+  "meanMoodChange": {
+    "mean": 1.06,
+    "observations": 35
+  }
+}
