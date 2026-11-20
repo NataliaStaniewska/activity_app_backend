@@ -53,6 +53,87 @@ python -m uvicorn app.main:app --reload
 API: <http://127.0.0.1:8000>, dokumentacja Swagger UI: <http://127.0.0.1:8000/docs>.
 Endpointy `GET /` i `GET /health` są dostępne bez odpytywania bazy.
 
+## Migracja kategorii i emocji na identyfikatory
+
+Rewizja `20261120_03` aktualizuje wyłącznie listy `categories` i `emotions`.
+Sprawdza wszystkie rekordy przed zapisem, zachowuje kolejność elementów i
+weryfikuje liczbę rekordów, ich ID oraz obie listy przed zatwierdzeniem transakcji.
+Nieznana wartość, pusta lista lub duplikat po normalizacji przerywa migrację.
+Ponowne uruchomienie pomija wartości już zapisane jako identyfikatory.
+
+### Kopia przed uruchomieniem
+
+Zatrzymaj aplikację i inne procesy zapisujące do bazy. Poniższe polecenia
+uruchom w `activity_app_backend` dla lokalnej bazy Docker Compose, gdy
+`DATABASE_URL` w `.env` wskazuje na tę samą bazę co usługa `db`.
+
+```bash
+umask 077
+BACKUP_DIR=$(mktemp -d ../postgres-backup.XXXXXXXX)
+BACKUP="$BACKUP_DIR/pre-vocabulary.dump"
+
+docker compose exec -T db sh -ec '
+  export PGPASSWORD="$POSTGRES_PASSWORD" PGOPTIONS="-c default_transaction_read_only=on"
+  exec pg_dump -h 127.0.0.1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" --format=custom
+' > "$BACKUP" &&
+docker compose exec -T db pg_restore --list < "$BACKUP" > "$BACKUP_DIR/archive-list.txt" &&
+docker compose exec -T db pg_restore --file=/dev/null < "$BACKUP" &&
+shasum -a 256 "$BACKUP"
+```
+
+Kontynuuj po pomyślnym zakończeniu wszystkich poleceń. Kopia zawiera dane
+użytkownika. Przechowuj ją poza repozytorium. Zachowaj wynik poniższej
+kontroli liczności i wersji przed migracją:
+
+```bash
+docker compose exec -T db sh -ec '
+  export PGPASSWORD="$POSTGRES_PASSWORD" PGOPTIONS="-c default_transaction_read_only=on"
+  exec psql -h 127.0.0.1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1 \
+    -c "SELECT count(*) AS activity_count FROM activities" \
+    -c "SELECT version_num FROM alembic_version"
+'
+```
+
+### Uruchomienie i kontrola
+
+```bash
+source .venv/bin/activate
+unset DATABASE_URL
+python -m alembic current
+python -m alembic upgrade 20261120_03
+python -m alembic current
+```
+
+Polecenia wczytają adres z `.env`. Przed uruchomieniem spodziewana rewizja
+to `20261115_02`, a po udanym uruchomieniu `20261120_03`. Powtórz kontrolę
+liczności z poprzedniego kroku. Liczba wpisów ma być identyczna. Migracja
+sama sprawdza pełną zgodność list ze słownikiem i zachowanie wszystkich ID.
+Przy błędzie sprawdź wskazany rekord przed ponowieniem.
+
+### Odtworzenie kopii
+
+Po zamianie aliasów na ID Alembic nie może odtworzyć ich oryginalnej pisowni.
+Aby odzyskać dane sprzed migracji, odtwórz kopię w nowej bazie. Ustaw
+`BACKUP` na ścieżkę do pliku kopii, jeśli pracujesz w nowej sesji terminala.
+Nazwa `activity_app_pre_vocabulary` musi być wolna, a rola musi mieć prawo
+tworzenia baz.
+
+```bash
+docker compose exec -T db sh -ec '
+  export PGPASSWORD="$POSTGRES_PASSWORD"
+  exec createdb -h 127.0.0.1 -U "$POSTGRES_USER" activity_app_pre_vocabulary
+' &&
+docker compose exec -T db sh -ec '
+  export PGPASSWORD="$POSTGRES_PASSWORD"
+  exec pg_restore -h 127.0.0.1 -U "$POSTGRES_USER" -d activity_app_pre_vocabulary \
+    --single-transaction --exit-on-error
+' < "$BACKUP"
+```
+
+Odtworzona baza jest osobnym punktem przywracania. Jeżeli od czasu wykonania
+kopii dodano lub edytowano wpisy, uwzględnij je przed przełączeniem aplikacji
+na odtworzoną bazę.
+
 ## API aktywności
 
 - `POST /activities` — utworzenie aktywności (odpowiedź `201`).

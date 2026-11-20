@@ -1,14 +1,22 @@
 import pytest
 
+from app.models.activity import ActivityEntry
 
-def test_create_and_read_activity(client, valid_activity):
+
+def test_create_and_read_activity(client, valid_activity, db_session):
     response = client.post("/activities", json=valid_activity)
 
     assert response.status_code == 201
     created = response.json()
     assert created["id"] > 0
     assert created["activityName"] == "Spacer"
-    assert created["categories"] == ["Ruch", "Relaks"]
+    assert created["categories"] == ["physical_activity", "relaxation"]
+    assert created["emotions"] == ["calm", "joy"]
+    assert created["locationType"] == "outdoor"
+    assert created["companyType"] == "alone"
+    stored = db_session.get(ActivityEntry, created["id"])
+    assert stored.categories == created["categories"]
+    assert stored.emotions == created["emotions"]
     assert created["date"] == "2025-03-08T13:30:00Z"
 
     detail_response = client.get(f"/activities/{created['id']}")
@@ -18,6 +26,30 @@ def test_create_and_read_activity(client, valid_activity):
     list_response = client.get("/activities")
     assert list_response.status_code == 200
     assert list_response.json() == [created]
+
+
+def test_create_accepts_ids_and_polish_aliases_in_order(client, valid_activity):
+    response = client.post(
+        "/activities",
+        json={
+            **valid_activity,
+            "categories": ["creativity", "  SPOTKANIA  ", "Nauka", "Inne"],
+            "emotions": [
+                "joy", "Spokój", "Zadowolenie", "Ekscytacja", "Smutek", "Złość",
+                "Lęk", "Frustracja", "Obojętność", "  SKUPIENIE  ", "zmęczenie",
+            ],
+            "companyType": "withOthers",
+        },
+    )
+
+    assert response.status_code == 201
+    created = response.json()
+    assert created["categories"] == ["creativity", "socializing", "learning", "other"]
+    assert created["emotions"] == [
+        "joy", "calm", "satisfaction", "excitement", "sadness", "anger",
+        "anxiety", "frustration", "indifference", "focus", "fatigue",
+    ]
+    assert created["companyType"] == "withOthers"
 
 
 def test_activities_are_listed_newest_first(client, valid_activity):
@@ -63,7 +95,12 @@ def test_optional_fields_can_be_omitted(client, valid_activity):
         ("moodBefore", 0),
         ("activityName", "   "),
         ("categories", []),
+        ("categories", ["unknown"]),
+        ("categories", ["Ruch", "physical_activity"]),
         ("emotions", []),
+        ("emotions", [" "]),
+        ("emotions", ["relaxation"]),
+        ("emotions", ["Radość", "joy"]),
         ("locationType", "unknown"),
         ("companyType", "group"),
         ("date", "2025-03-08T14:30:00"),

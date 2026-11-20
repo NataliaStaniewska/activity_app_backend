@@ -51,6 +51,12 @@ def prepare_database():
 
 
 @pytest.fixture
+def db_session():
+    with TestSessionLocal() as session:
+        yield session
+
+
+@pytest.fixture
 def valid_activity():
     return {
         "activityName": "Spacer",

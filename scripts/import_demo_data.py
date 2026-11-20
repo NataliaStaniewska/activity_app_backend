@@ -13,7 +13,7 @@ IMPORT_KEY = "activity-demo-v1"
 _DEMO_ACTIVITIES = [
     {
         "name": "Spacer",
-        "categories": ["Ruch", "Relaks"],
+        "categories": ["physical_activity", "relaxation"],
         "locations": ["outdoor", "outdoor", "mixed", "outdoor"],
         "companies": ["alone", "alone", "withOthers", "alone"],
         "moods": [4, 5, 3, 4],
@@ -24,7 +24,7 @@ _DEMO_ACTIVITIES = [
     },
     {
         "name": "Czytanie",
-        "categories": ["Relaks", "Nauka"],
+        "categories": ["relaxation", "learning"],
         "locations": ["indoor", "indoor", "indoor", "mixed"],
         "companies": ["alone", "alone", "alone", "alone"],
         "moods": [4, 3, 5, 4],
@@ -35,7 +35,7 @@ _DEMO_ACTIVITIES = [
     },
     {
         "name": "Gotowanie",
-        "categories": ["Kreatywność", "Relaks"],
+        "categories": ["creativity", "relaxation"],
         "locations": ["indoor", "indoor", "indoor", "indoor"],
         "companies": ["alone", "withOthers", "alone", "withOthers"],
         "moods": [3, 4, 4, 2],
@@ -46,7 +46,7 @@ _DEMO_ACTIVITIES = [
     },
     {
         "name": "Rysowanie",
-        "categories": ["Kreatywność", "Relaks"],
+        "categories": ["creativity", "relaxation"],
         "locations": ["indoor", "indoor", "indoor", "indoor"],
         "companies": ["alone", "alone", "alone", "alone"],
         "moods": [4, 3, 4, 5],
@@ -57,7 +57,7 @@ _DEMO_ACTIVITIES = [
     },
     {
         "name": "Joga",
-        "categories": ["Ruch", "Relaks"],
+        "categories": ["physical_activity", "relaxation"],
         "locations": ["indoor", "indoor", "outdoor", "indoor"],
         "companies": ["alone", "withOthers", "alone", "alone"],
         "moods": [4, 3, 5, 4],
@@ -68,7 +68,7 @@ _DEMO_ACTIVITIES = [
     },
     {
         "name": "Jazda na rowerze",
-        "categories": ["Ruch", "Inne"],
+        "categories": ["physical_activity", "other"],
         "locations": ["outdoor", "outdoor", "mixed", "outdoor"],
         "companies": ["alone", "withOthers", "alone", "withOthers"],
         "moods": [5, 4, 3, 4],
@@ -79,7 +79,7 @@ _DEMO_ACTIVITIES = [
     },
     {
         "name": "Spotkanie ze znajomymi",
-        "categories": ["Spotkania", "Relaks"],
+        "categories": ["socializing", "relaxation"],
         "locations": ["indoor", "outdoor", "indoor", "mixed"],
         "companies": ["withOthers", "withOthers", "withOthers", "withOthers"],
         "moods": [4, 5, 3, 4],
@@ -90,7 +90,7 @@ _DEMO_ACTIVITIES = [
     },
     {
         "name": "Nauka języka",
-        "categories": ["Nauka", "Kreatywność"],
+        "categories": ["learning", "creativity"],
         "locations": ["indoor", "indoor", "mixed", "indoor"],
         "companies": ["alone", "alone", "withOthers", "alone"],
         "moods": [3, 4, 3, 5],
@@ -101,7 +101,7 @@ _DEMO_ACTIVITIES = [
     },
     {
         "name": "Ogrodnictwo",
-        "categories": ["Relaks", "Inne"],
+        "categories": ["relaxation", "other"],
         "locations": ["outdoor", "mixed", "outdoor", "outdoor"],
         "companies": ["alone", "alone", "withOthers", "alone"],
         "moods": [5, 4, 4, 3],
@@ -112,7 +112,7 @@ _DEMO_ACTIVITIES = [
     },
     {
         "name": "Gry planszowe",
-        "categories": ["Spotkania", "Kreatywność"],
+        "categories": ["socializing", "creativity"],
         "locations": ["indoor", "indoor", "indoor", "indoor"],
         "companies": ["withOthers", "withOthers", "withOthers", "withOthers"],
         "moods": [4, 3, 5, 4],
@@ -140,9 +140,9 @@ def build_demo_entries() -> list[ActivityEntry]:
                     mood_before=activity["moods_before"][occurrence],
                     mood_after=activity["moods"][occurrence],
                     rating=activity["ratings"][occurrence],
-                    emotions=["spokój", "radość"]
+                    emotions=["calm", "joy"]
                     if activity["moods"][occurrence] >= 4
-                    else ["skupienie", "zmęczenie"],
+                    else ["focus", "fatigue"],
                     likes=activity["likes"] if occurrence == 0 else None,
                     dislikes=activity["dislikes"] if occurrence == 0 else None,
                     notes=None,

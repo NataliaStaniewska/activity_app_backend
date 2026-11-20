@@ -1,7 +1,10 @@
 from datetime import datetime, timezone
 from enum import Enum
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator
+
+
+from app.activity_vocabulary import CATEGORY_ALIASES, EMOTION_ALIASES, resolve_id
 
 
 class LocationType(str, Enum):
@@ -41,13 +44,23 @@ class ActivityCreate(BaseModel):
 
     @field_validator("categories", "emotions")
     @classmethod
-    def entries_must_be_nonblank_and_unique(cls, values: list[str]) -> list[str]:
-        cleaned_values = [value.strip() for value in values]
-        if any(not value for value in cleaned_values):
-            raise ValueError("Entries cannot contain blank values")
-        if len(set(cleaned_values)) != len(cleaned_values):
-            raise ValueError("Entries must be unique")
-        return cleaned_values
+    def normalize_vocabulary(
+        cls, values: list[str], info: ValidationInfo
+    ) -> list[str]:
+        aliases = (
+            CATEGORY_ALIASES if info.field_name == "categories" else EMOTION_ALIASES
+        )
+        identifiers = []
+        seen = set()
+        for value in values:
+            identifier = resolve_id(value, aliases)
+            if identifier is None:
+                raise ValueError(f"{info.field_name} must contain known values")
+            if identifier in seen:
+                raise ValueError(f"{info.field_name} must be unique after normalization")
+            identifiers.append(identifier)
+            seen.add(identifier)
+        return identifiers
 
     @field_validator("date")
     @classmethod

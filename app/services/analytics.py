@@ -5,6 +5,7 @@ from statistics import fmean
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.activity_vocabulary import CATEGORY_ALIASES, resolve_id
 from app.models.activity import ActivityEntry
 from app.schemas.analytics import (
     ActivityRankings,
@@ -136,7 +137,11 @@ def analyze_activities(db: Session) -> tuple[StatisticsResponse, list[ActivityEn
         company_values[entry.company_type]["mood_after"].append(entry.mood_after)
         company_values[entry.company_type]["rating"].append(entry.rating)
 
-        for category in set(entry.categories):
+        # Retain unmapped historical values in their original groups.
+        categories = {
+            resolve_id(value, CATEGORY_ALIASES) or value for value in entry.categories
+        }
+        for category in categories:
             category_values[category]["mood_after"].append(entry.mood_after)
             category_values[category]["rating"].append(entry.rating)
 

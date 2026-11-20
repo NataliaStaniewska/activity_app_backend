@@ -1,9 +1,11 @@
 from copy import deepcopy
+from datetime import datetime, timezone
 
 from sqlalchemy import create_engine, func, select
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from app.activity_vocabulary import CATEGORY_LABELS
 from app.db.base import Base
 from app.models.activity import ActivityEntry
 from app.models.demo_import import DemoImportRun
@@ -59,9 +61,21 @@ def test_single_activity_and_missing_mood_before(client, valid_activity):
 
 
 def test_statistics_aggregate_repeated_activities_and_multi_select_categories(
-    client, valid_activity
+    client, valid_activity, db_session
 ):
-    _create_activity(client, valid_activity, moodAfter=4, rating=5, moodBefore=2)
+    legacy = ActivityEntry(
+        activity_name="Spacer",
+        date=datetime(2025, 3, 8, 13, 30, tzinfo=timezone.utc),
+        categories=["Ruch", "physical_activity", "Relaks", "Kategoria historyczna"],
+        emotions=["spokój", "radość"],
+        location_type="outdoor",
+        company_type="alone",
+        mood_before=2,
+        mood_after=4,
+        rating=5,
+    )
+    db_session.add(legacy)
+    db_session.commit()
     _create_activity(
         client,
         valid_activity,
@@ -69,7 +83,7 @@ def test_statistics_aggregate_repeated_activities_and_multi_select_categories(
         moodAfter=2,
         rating=3,
         moodBefore=None,
-        categories=["Ruch", "Spotkania"],
+        categories=["physical_activity", "socializing"],
         likes="Lubię kontakt z naturą.",
         dislikes="Nie lubię deszczu.",
     )
@@ -80,7 +94,7 @@ def test_statistics_aggregate_repeated_activities_and_multi_select_categories(
         moodAfter=5,
         rating=4,
         moodBefore=4,
-        categories=["Relaks"],
+        categories=["relaxation"],
         likes=None,
         notes=None,
     )
@@ -91,24 +105,31 @@ def test_statistics_aggregate_repeated_activities_and_multi_select_categories(
 
     assert statistics["totalEntries"] == 3
     assert statistics["distinctActivities"] == 1
-    assert statistics["distinctCategories"] == 3
+    assert statistics["distinctCategories"] == 4
+    assert statistics["diversity"]["uniqueCategories"] == 4
     activity = statistics["activityOccurrences"][0]
     assert activity["count"] == 3
     assert activity["meanMoodAfter"] == {"mean": 3.67, "observations": 3}
     assert activity["meanRating"] == {"mean": 4.0, "observations": 3}
 
     categories = {item["name"]: item for item in statistics["categories"]}
-    assert categories["Ruch"]["count"] == 2
-    assert categories["Ruch"]["meanMoodAfter"] == {
+    assert categories["physical_activity"]["count"] == 2
+    assert categories["physical_activity"]["meanMoodAfter"] == {
         "mean": 3.0,
         "observations": 2,
     }
-    assert categories["Relaks"]["count"] == 2
-    assert categories["Relaks"]["meanRating"] == {
+    assert categories["relaxation"]["count"] == 2
+    assert categories["relaxation"]["meanRating"] == {
         "mean": 4.5,
         "observations": 2,
     }
-    assert categories["Spotkania"]["count"] == 1
+    assert categories["socializing"]["count"] == 1
+    assert categories["Kategoria historyczna"]["count"] == 1
+    db_session.refresh(legacy)
+    assert legacy.categories == [
+        "Ruch", "physical_activity", "Relaks", "Kategoria historyczna"
+    ]
+    assert legacy.emotions == ["spokój", "radość"]
 
     assert statistics["moodAfterDistribution"] == [
         {"value": 2, "count": 1},
@@ -118,9 +139,12 @@ def test_statistics_aggregate_repeated_activities_and_multi_select_categories(
     assert statistics["meanMoodChange"] == {"mean": 1.5, "observations": 2}
     assert profile_response.status_code == 200
     assert profile["activityPreferences"]["highestRating"][0]["occurrences"] == 3
-    assert "Spotkania" not in [
-        item["name"] for item in profile["categoryPreferences"]["highestRating"]
+    rankings = profile["categoryPreferences"]["highestRating"]
+    assert [(item["name"], item["occurrences"]) for item in rankings] == [
+        ("relaxation", 2),
+        ("physical_activity", 2),
     ]
+    assert profile["contextPreferences"]["categories"]["highestRating"] == rankings
     assert profile["userStatements"][-1] == {
         "activityName": "Spacer",
         "likes": "Lubię kontakt z naturą.",
@@ -143,7 +167,12 @@ def test_demo_import_is_repeatable_without_duplicates():
         assert import_demo_data(factory) is False
 
         with factory() as db:
-            assert db.scalar(select(func.count()).select_from(ActivityEntry)) == 40
+            activities = db.scalars(select(ActivityEntry)).all()
+            assert len(activities) == 40
+            categories = {value for entry in activities for value in entry.categories}
+            emotions = {value for entry in activities for value in entry.emotions}
+            assert categories == set(CATEGORY_LABELS)
+            assert emotions == {"calm", "joy", "focus", "fatigue"}
             assert db.scalar(select(func.count()).select_from(DemoImportRun)) == 1
             assert db.get(DemoImportRun, IMPORT_KEY) is not None
     finally:
