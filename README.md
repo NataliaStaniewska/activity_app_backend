@@ -95,6 +95,103 @@ API odzwierciedla model `ActivityEntry`; Flutter nie jest modyfikowany w tym
 etapie. Wartości enumów to `indoor`, `outdoor`, `mixed` dla lokalizacji oraz
 `alone`, `withOthers` dla towarzystwa.
 
+## Generowanie rekomendacji i porównanie modeli
+
+`POST /recommendations/generate` korzysta z istniejącego profilu
+`GET /recommendation-profile` i tego samego promptu `v3` dla obu dostawców.
+Domyślnie używany jest model z `RECOMMENDATION_DEFAULT_MODEL`; opcjonalny query
+parameter `model` pozwala wybrać jeden ze skonfigurowanych modeli:
+`gemini-3.5-flash-lite` lub `openai/gpt-oss-20b` (Groq). Odpowiedź obu zawiera
+dokładnie trzy nowe aktywności/hobby z polami `name`, `category` i `reason`.
+Wyniki są walidowane wspólnie: muszą zawierać trzy pozycje, niepuste wartości,
+unikalne nazwy i nie mogą powtarzać aktywności z profilu.
+
+Ustaw oba klucze w lokalnym `.env` (nigdy nie commituj tego pliku):
+
+```dotenv
+GEMINI_API_KEY=your-google-ai-api-key
+GEMINI_MODEL=gemini-3.5-flash-lite
+GROQ_API_KEY=your-groq-api-key
+GROQ_MODEL=openai/gpt-oss-20b
+GROQ_MAX_OUTPUT_TOKENS=4096
+RECOMMENDATION_DEFAULT_MODEL=gemini-3.5-flash-lite
+RECOMMENDATION_PROMPT_VERSION=v3
+RECOMMENDATION_TEMPERATURE=0.4
+RECOMMENDATION_TOP_P=0.9
+RECOMMENDATION_MAX_OUTPUT_TOKENS=1200
+RECOMMENDATION_TIMEOUT_MS=30000
+```
+
+`RECOMMENDATION_MAX_OUTPUT_TOKENS` pozostaje ustawieniem Gemini. Groq używa
+osobnego `GROQ_MAX_OUTPUT_TOKENS` (domyślnie `4096` dla GPT-OSS-20B); wartość
+faktycznie użyta przez wybrany model jest zwracana w `generationConfig`.
+Wersja promptu i parametry generowania są zapisywane z wynikami eksperymentu.
+Oba modele korzystają z tego samego profilu i promptu v3. Groq GPT-OSS-20B
+używa strict JSON Schema, a odpowiedzi obu modeli przechodzą tę samą walidację
+po stronie API.
+
+W Swagger UI (`/docs`) rozwiń `POST /recommendations/generate`. Pole `model` jest
+opcjonalne; pozostawienie go pustego użyje modelu domyślnego. Możesz też wybrać
+konkretny model przez `curl`:
+
+```bash
+curl -X POST 'http://127.0.0.1:8000/recommendations/generate?model=gemini-3.5-flash-lite'
+curl -X POST 'http://127.0.0.1:8000/recommendations/generate?model=openai%2Fgpt-oss-20b'
+```
+
+Odpowiedź zawiera `model`, `promptVersion`, `generationConfig`, `elapsedMs` i
+`recommendations`, np. Dla Groq log serwera rejestruje również `attempts`,
+`failed_attempts` i `retries`, żeby można było porównać niezawodność generowania.
+
+```json
+{
+  "model": "openai/gpt-oss-20b",
+  "promptVersion": "v3",
+  "generationConfig": {
+    "temperature": 0.4,
+    "top_p": 0.9,
+    "max_output_tokens": 4096
+  },
+  "elapsedMs": 820,
+  "recommendations": [
+    {
+      "name": "Fotografia przyrodnicza",
+      "category": "Kreatywność",
+      "reason": "W historii często pojawiają się spacery na zewnątrz; fotografia może połączyć ruch z kreatywnością."
+    },
+    {
+      "name": "Obserwowanie ptaków",
+      "category": "Relaks",
+      "reason": "Profil zawiera pozytywne oceny spokojnych aktywności na świeżym powietrzu."
+    },
+    {
+      "name": "Warsztaty ceramiczne",
+      "category": "Kreatywność",
+      "reason": "Rysowanie jest wykonywane wielokrotnie, a profil pokazuje zainteresowanie aktywnościami twórczymi."
+    }
+  ]
+}
+```
+
+To jedynie przykład formatu — nie rzeczywista odpowiedź modelu. Rzeczywista
+odpowiedź nie obiecuje poprawy nastroju. Brak klucza zwraca `503`, limit API
+`429`, timeout `504`, a błąd lub niepoprawne dane modelu `502`.
+
+Przy błędzie sprawdź terminal, w którym działa Uvicorn. Serwis zapisuje wpis
+`Gemini request failed` lub `Groq request failed` z kategorią
+(`authentication`, `model_unavailable`, `rate_limit`, `timeout`, `network`,
+`provider_unavailable`, `response_validation` lub `client_error`), typem
+wyjątku, kodem HTTP dostawcy (jeśli API go zwróciło), statusem i bezpiecznym
+komunikatem diagnostycznym.
+Odpowiedź HTTP zawiera jedynie ogólny opis. Klucz, nagłówki autoryzacji,
+odpowiedź modelu i profil użytkownika nie są logowane.
+
+Uruchamiaj serwer bez wyciszania logów, aby zobaczyć diagnostykę:
+
+```bash
+python -m uvicorn app.main:app --reload --log-level info
+```
+
 ## Analiza historii i profil rekomendacyjny
 
 Analiza wykonywana jest w Pythonie na wszystkich wpisach bazy, ponieważ na tym

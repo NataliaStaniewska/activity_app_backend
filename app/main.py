@@ -2,6 +2,7 @@ from fastapi import FastAPI
 
 from app.api.routes.activities import router as activities_router
 from app.api.routes.analytics import router as analytics_router
+from app.api.routes.recommendations import router as recommendations_router
 
 app = FastAPI(
     title="Activity App API",
@@ -11,6 +12,7 @@ app = FastAPI(
 
 app.include_router(activities_router)
 app.include_router(analytics_router)
+app.include_router(recommendations_router)
 
 
 @app.get("/")
